@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import axios from 'axios';
 
-// DYNAMIC BACKEND ROUTING: Uses relative paths in production (Vercel) 
-// and falls back to localhost:5000 only during local development.
-const BACKEND_URL = process.env.NODE_ENV === 'production'
-  ? ''
-  : (process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000');
+// DYNAMIC BACKEND ROUTING: Strictly checks the actual browser hostname.
+// If running on Vercel, BACKEND_URL is empty ('') so requests use relative paths.
+// If running on local computer, it falls back to http://localhost:5000.
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 
+  (window.location.hostname === 'localhost' ? 'http://localhost:5000' : '');
 
 const LOGIN_URL = `${BACKEND_URL}/auth/login`;
 
