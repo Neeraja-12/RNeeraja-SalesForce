@@ -50,7 +50,6 @@ const OBJECT_FIELDS = {
     Case: ['Id', 'CaseNumber', 'Subject', 'Status', 'Priority', 'Origin']
 };
 
-// Helper: Dynamic fallback for unknown standard or custom objects
 const getFieldsForObject = (objectType) => {
     if (OBJECT_FIELDS[objectType]) {
         return OBJECT_FIELDS[objectType];
@@ -61,7 +60,6 @@ const getFieldsForObject = (objectType) => {
     return ['Id', 'Name', 'CreatedDate', 'LastModifiedDate'];
 };
 
-// Helper: Sanitize request payload before creating/updating records
 const sanitizeBody = (body) => {
     const cleanData = { ...body };
     delete cleanData.Id;
@@ -91,23 +89,18 @@ const getSfClient = (req) => {
 app.get('/auth/login', (req, res) => {
     const authUrl = 'https://login.salesforce.com/services/oauth2/authorize';
     const { verifier, challenge } = generatePKCE();
-    const state = Date.now().toString() + '_' + Math.random().toString(36).substring(2);
 
-    const isProduction = process.env.NODE_ENV === 'production' || process.env.VERCEL;
-
-    // Save PKCE verifier inside an HTTP-only Cookie with cross-site attributes
-    res.cookie(`pkce_${state}`, verifier, {
-        httpOnly: true,
-        secure: isProduction,
-        sameSite: isProduction ? 'none' : 'lax',
-        maxAge: 10 * 60 * 1000 // 10 minutes
-    });
+    // Encode the verifier directly inside state to bypass serverless cookie loss
+    const statePayload = Buffer.from(JSON.stringify({
+        verifier: verifier,
+        nonce: Date.now()
+    })).toString('base64url');
 
     const params = {
         response_type: 'code',
         client_id: process.env.CLIENT_ID,
         redirect_uri: REDIRECT_URI,
-        state: state,
+        state: statePayload,
         code_challenge: challenge,
         code_challenge_method: 'S256'
     };
@@ -125,9 +118,13 @@ const handleCallback = async (req, res) => {
         return res.status(400).send('Missing authorization code');
     }
 
-    // Retrieve PKCE verifier from incoming cookies
-    const codeVerifier = req.cookies[`pkce_${state}`];
-    res.clearCookie(`pkce_${state}`);
+    let codeVerifier;
+    try {
+        const decodedState = JSON.parse(Buffer.from(state, 'base64url').toString('utf-8'));
+        codeVerifier = decodedState.verifier;
+    } catch (e) {
+        return res.status(400).send('Invalid state payload or corrupted PKCE verifier');
+    }
 
     const tokenUrl = 'https://login.salesforce.com/services/oauth2/token';
     const payload = {
@@ -161,7 +158,6 @@ app.get('/callback', handleCallback);
 // REST API ENDPOINTS
 // ==========================================
 
-// GET Records
 app.get('/api/records/:objectType', async (req, res) => {
     const { objectType } = req.params;
     const offset = parseInt(req.query.offset) || 0;
@@ -182,7 +178,6 @@ app.get('/api/records/:objectType', async (req, res) => {
     }
 });
 
-// CREATE Record
 app.post('/api/records/:objectType', async (req, res) => {
     const { objectType } = req.params;
     const payload = sanitizeBody(req.body);
@@ -196,7 +191,6 @@ app.post('/api/records/:objectType', async (req, res) => {
     }
 });
 
-// UPDATE Record
 app.patch('/api/records/:objectType/:id', async (req, res) => {
     const { objectType, id } = req.params;
     const payload = sanitizeBody(req.body);
@@ -210,7 +204,6 @@ app.patch('/api/records/:objectType/:id', async (req, res) => {
     }
 });
 
-// DELETE Record
 app.delete('/api/records/:objectType/:id', async (req, res) => {
     const { objectType, id } = req.params;
     try {
@@ -221,10 +214,6 @@ app.delete('/api/records/:objectType/:id', async (req, res) => {
         res.status(err.response?.status || 500).json({ error: err.response?.data || err.message });
     }
 });
-
-// ==========================================
-// EXPORT FOR VERCEL & LOCAL SERVER
-// ==========================================
 
 if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
     const PORT = process.env.PORT || 5000;
