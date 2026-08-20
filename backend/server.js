@@ -8,15 +8,18 @@ require('dotenv').config();
 
 const app = express();
 
+const FRONTEND_URL = process.env.FRONTEND_URL || 'https://rneeraja-salesforce76.vercel.app';
+const REDIRECT_URI = process.env.REDIRECT_URI || 'https://rneeraja-salesforce76.vercel.app/auth/callback';
+
 app.use(cors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    origin: [FRONTEND_URL, 'http://localhost:3000'],
     credentials: true
 }));
 
 app.use(express.json());
 app.use(cookieParser());
 
-// Root health-check endpoint (fixes "Cannot GET /")
+// Root health-check endpoint
 app.get('/', (req, res) => {
     res.json({
         status: 'online',
@@ -90,18 +93,20 @@ app.get('/auth/login', (req, res) => {
     const { verifier, challenge } = generatePKCE();
     const state = Date.now().toString() + '_' + Math.random().toString(36).substring(2);
 
-    // Save PKCE verifier inside an HTTP-only Cookie for serverless reliability
+    const isProduction = process.env.NODE_ENV === 'production' || process.env.VERCEL;
+
+    // Save PKCE verifier inside an HTTP-only Cookie with cross-site attributes
     res.cookie(`pkce_${state}`, verifier, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
+        secure: isProduction,
+        sameSite: isProduction ? 'none' : 'lax',
         maxAge: 10 * 60 * 1000 // 10 minutes
     });
 
     const params = {
         response_type: 'code',
         client_id: process.env.CLIENT_ID,
-        redirect_uri: process.env.REDIRECT_URI,
+        redirect_uri: REDIRECT_URI,
         state: state,
         code_challenge: challenge,
         code_challenge_method: 'S256'
@@ -130,7 +135,7 @@ const handleCallback = async (req, res) => {
         code: code,
         client_id: process.env.CLIENT_ID,
         client_secret: process.env.CLIENT_SECRET,
-        redirect_uri: process.env.REDIRECT_URI,
+        redirect_uri: REDIRECT_URI,
         code_verifier: codeVerifier
     };
 
@@ -140,9 +145,8 @@ const handleCallback = async (req, res) => {
         });
 
         const { access_token, instance_url } = response.data;
-        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
 
-        return res.redirect(`${frontendUrl}/?access_token=${encodeURIComponent(access_token)}&instance_url=${encodeURIComponent(instance_url)}`);
+        return res.redirect(`${FRONTEND_URL}/?access_token=${encodeURIComponent(access_token)}&instance_url=${encodeURIComponent(instance_url)}`);
     } catch (err) {
         console.error('Token Exchange Error:', err.response?.data || err.message);
         res.status(500).send('Authentication failed: ' + (err.response?.data?.error_description || err.message));
@@ -222,7 +226,7 @@ app.delete('/api/records/:objectType/:id', async (req, res) => {
 // EXPORT FOR VERCEL & LOCAL SERVER
 // ==========================================
 
-if (process.env.NODE_ENV !== 'production') {
+if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
     const PORT = process.env.PORT || 5000;
     app.listen(PORT, () => console.log(`✅ Server running on http://localhost:${PORT}`));
 }
