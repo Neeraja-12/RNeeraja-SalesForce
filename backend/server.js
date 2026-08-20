@@ -16,8 +16,17 @@ app.use(cors({
 app.use(express.json());
 app.use(cookieParser());
 
-// In-memory store mapping state ID to PKCE verifier
-const pkceStore = new Map();
+// Root health-check endpoint (fixes "Cannot GET /")
+app.get('/', (req, res) => {
+    res.json({
+        status: 'online',
+        message: 'Salesforce Express API is running on Vercel',
+        endpoints: {
+            auth: '/auth/login',
+            records: '/api/records/:objectType'
+        }
+    });
+});
 
 // Generate PKCE verifier and SHA-256 challenge
 function generatePKCE() {
@@ -29,7 +38,7 @@ function generatePKCE() {
     return { verifier, challenge };
 }
 
-// Field definitions for key Standard Objects (6 fields each, satisfying the 5-10 constraint)
+// Field definitions for key Standard Objects
 const OBJECT_FIELDS = {
     Account: ['Id', 'Name', 'Type', 'Industry', 'Phone', 'AnnualRevenue'],
     Opportunity: ['Id', 'Name', 'StageName', 'Amount', 'CloseDate', 'Probability'],
@@ -52,20 +61,14 @@ const getFieldsForObject = (objectType) => {
 // Helper: Sanitize request payload before creating/updating records
 const sanitizeBody = (body) => {
     const cleanData = { ...body };
-    // Primary identifiers & metadata
     delete cleanData.Id;
     delete cleanData.attributes;
-    
-    // Read-only system audit fields
     delete cleanData.CreatedDate;
     delete cleanData.LastModifiedDate;
     delete cleanData.CreatedById;
     delete cleanData.LastModifiedById;
     delete cleanData.SystemModstamp;
-    
-    // Auto-number fields (Salesforce throws errors if updated)
     delete cleanData.CaseNumber;
-
     return cleanData;
 };
 
@@ -87,8 +90,13 @@ app.get('/auth/login', (req, res) => {
     const { verifier, challenge } = generatePKCE();
     const state = Date.now().toString() + '_' + Math.random().toString(36).substring(2);
 
-    pkceStore.set(state, verifier);
-    setTimeout(() => pkceStore.delete(state), 10 * 60 * 1000);
+    // Save PKCE verifier inside an HTTP-only Cookie for serverless reliability
+    res.cookie(`pkce_${state}`, verifier, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 10 * 60 * 1000 // 10 minutes
+    });
 
     const params = {
         response_type: 'code',
@@ -112,8 +120,9 @@ const handleCallback = async (req, res) => {
         return res.status(400).send('Missing authorization code');
     }
 
-    const codeVerifier = pkceStore.get(state);
-    if (state) pkceStore.delete(state);
+    // Retrieve PKCE verifier from incoming cookies
+    const codeVerifier = req.cookies[`pkce_${state}`];
+    res.clearCookie(`pkce_${state}`);
 
     const tokenUrl = 'https://login.salesforce.com/services/oauth2/token';
     const payload = {
@@ -218,5 +227,4 @@ if (process.env.NODE_ENV !== 'production') {
     app.listen(PORT, () => console.log(`✅ Server running on http://localhost:${PORT}`));
 }
 
-// Required for Vercel Serverless Functions
 module.exports = app;
