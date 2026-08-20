@@ -11,22 +11,18 @@
       "use": "@vercel/node"
     }
   ],
-  "routes": [
+  "rewrites": [
     {
-      "src": "/auth/(.*)",
-      "dest": "backend/server.js"
+      "source": "/auth/:path*",
+      "destination": "/backend/server.js"
     },
     {
-      "src": "/api/(.*)",
-      "dest": "backend/server.js"
+      "source": "/api/:path*",
+      "destination": "/backend/server.js"
     },
     {
-      "src": "/static/(.*)",
-      "dest": "frontend/static/$1"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "frontend/index.html"
+      "source": "/:path*",
+      "destination": "/frontend/:path*"
     }
   ]
 }
