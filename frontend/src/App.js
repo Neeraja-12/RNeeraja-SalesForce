@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import axios from 'axios';
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
+// On Vercel (same-origin deployment), relative path '' routes directly to your hosted API.
+// Falls back to http://localhost:5000 only when testing locally.
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || '';
 
 // Default schema fallback fields (minimum 5, maximum 10 fields per assignment requirement)
 const OBJECT_SCHEMA_MAP = {
@@ -248,7 +250,10 @@ function App() {
                     <button
                       onClick={() => {
                         setEditingRecord(rec);
-                        setFormData(rec);
+                        const cleanData = { ...rec };
+                        delete cleanData.attributes;
+                        delete cleanData.Id;
+                        setFormData(cleanData);
                         setIsModalOpen(true);
                       }}
                       style={{ padding: '4px 8px', marginRight: '5px', cursor: 'pointer' }}
