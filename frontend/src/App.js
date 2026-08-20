@@ -1,11 +1,10 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import axios from 'axios';
 
-// On Vercel (same-origin deployment), relative path '' routes directly to your hosted API.
-// Falls back to http://localhost:5000 only when testing locally.
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || '';
+// FORCE RELATIVE ROUTING ON VERCEL TO PREVENT LOCALHOST REDIRECTS
+const BACKEND_URL = '';
 
-// Default schema fallback fields (minimum 5, maximum 10 fields per assignment requirement)
+// Default schema fallback fields
 const OBJECT_SCHEMA_MAP = {
   Account: ['Name', 'Type', 'Industry', 'Phone', 'AnnualRevenue'],
   Opportunity: ['Name', 'StageName', 'Amount', 'CloseDate', 'Probability'],
@@ -160,7 +159,7 @@ function App() {
       <div style={{ padding: '50px', textAlign: 'center', fontFamily: 'sans-serif' }}>
         <h1>Salesforce CRUD Application</h1>
         <button
-          onClick={() => (window.location.href = `${BACKEND_URL}/auth/login`)}
+          onClick={() => (window.location.href = '/auth/login')}
           style={{
             padding: '12px 24px',
             backgroundColor: '#0070d2',
