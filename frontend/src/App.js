@@ -1,15 +1,12 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import axios from 'axios';
 
-// DYNAMIC BACKEND ROUTING: Strictly checks the actual browser hostname.
-// If running on Vercel, BACKEND_URL is empty ('') so requests use relative paths.
-// If running on local computer, it falls back to http://localhost:5000.
+// Dynamically sets backend URL. On Vercel, it evaluates to an empty string ''
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 
   (window.location.hostname === 'localhost' ? 'http://localhost:5000' : '');
 
 const LOGIN_URL = `${BACKEND_URL}/auth/login`;
 
-// Default schema fallback fields
 const OBJECT_SCHEMA_MAP = {
   Account: ['Name', 'Type', 'Industry', 'Phone', 'AnnualRevenue'],
   Opportunity: ['Name', 'StageName', 'Amount', 'CloseDate', 'Probability'],
@@ -25,7 +22,6 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
 
-  // Form & Modal States
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState(null);
   const [formData, setFormData] = useState({});
@@ -37,7 +33,6 @@ function App() {
   const recordsCountRef = useRef(records.length);
   recordsCountRef.current = records.length;
 
-  // 1. Session & Token Extraction
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const accessToken = params.get('access_token');
@@ -54,7 +49,6 @@ function App() {
     }
   }, []);
 
-  // 2. Fetch Records Function
   const fetchRecords = useCallback(async (objType, currentOffset, isReset = false) => {
     if (loadingRef.current) return;
     setLoading(true);
@@ -80,7 +74,6 @@ function App() {
     }
   }, []);
 
-  // 3. Reset table when changing Object
   useEffect(() => {
     if (token) {
       setRecords([]);
@@ -89,7 +82,6 @@ function App() {
     }
   }, [selectedObject, token, fetchRecords]);
 
-  // 4. Infinite Scroll Observer
   const lastRecordElementRef = useCallback(
     node => {
       if (loading) return;
@@ -106,7 +98,6 @@ function App() {
     [loading, hasMore, selectedObject, fetchRecords]
   );
 
-  // Handle Form Submission (Create or Edit)
   const handleSubmit = async e => {
     e.preventDefault();
     const savedToken = localStorage.getItem('sf_access_token');
@@ -135,7 +126,6 @@ function App() {
     }
   };
 
-  // Handle Record Deletion
   const handleDelete = async id => {
     if (!window.confirm('Are you sure you want to delete this record?')) return;
     const savedToken = localStorage.getItem('sf_access_token');
@@ -181,17 +171,14 @@ function App() {
     );
   }
 
-  // Fallback to static schema fields if table has 0 records
   const columns = records.length > 0
     ? Object.keys(records[0]).filter(k => k !== 'attributes')
     : ['Id', ...(OBJECT_SCHEMA_MAP[selectedObject] || ['Name'])];
 
-  // Fields visible in the Create / Edit Modal (exclude primary ID)
   const formFields = columns.filter(c => c !== 'Id');
 
   return (
     <div style={{ padding: '20px', fontFamily: 'Arial, sans-serif', backgroundColor: '#f4f6f9', minHeight: '100vh' }}>
-      {/* Header Bar */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', background: '#fff', padding: '15px 20px', borderRadius: '8px' }}>
         <h2 style={{ margin: 0, color: '#0070d2' }}>Salesforce Dashboard</h2>
 
@@ -227,7 +214,6 @@ function App() {
         </div>
       </div>
 
-      {/* Dynamic Data Table */}
       <div style={{ background: '#fff', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 2px 5px rgba(0,0,0,0.1)' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
           <thead>
@@ -280,7 +266,6 @@ function App() {
         {!loading && records.length === 0 && <p style={{ textAlign: 'center', padding: '15px' }}>No records found for {selectedObject}.</p>}
       </div>
 
-      {/* Modal Form */}
       {isModalOpen && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
           <div style={{ background: '#fff', padding: '25px', borderRadius: '8px', width: '400px' }}>
