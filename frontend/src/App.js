@@ -175,7 +175,7 @@ function App() {
     ? Object.keys(records[0]).filter(k => k !== 'attributes')
     : ['Id', ...(OBJECT_SCHEMA_MAP[selectedObject] || ['Name'])];
 
-  const formFields = columns.filter(c => c !== 'Id');
+  const formFields = (OBJECT_SCHEMA_MAP[selectedObject] || columns).filter(c => c !== 'Id');
 
   return (
     <div style={{ padding: '20px', fontFamily: 'Arial, sans-serif', backgroundColor: '#f4f6f9', minHeight: '100vh' }}>

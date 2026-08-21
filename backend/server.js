@@ -8,8 +8,19 @@ require('dotenv').config();
 
 const app = express();
 
+// ==========================================
+// ENVIRONMENT & CONFIGURATION
+// Supports both CLIENT_ID and SALESFORCE_CLIENT_ID
+// ==========================================
+const CLIENT_ID = process.env.CLIENT_ID || process.env.SALESFORCE_CLIENT_ID;
+const CLIENT_SECRET = process.env.CLIENT_SECRET || process.env.SALESFORCE_CLIENT_SECRET;
 const FRONTEND_URL = process.env.FRONTEND_URL || 'https://rneeraja-salesforce76.vercel.app';
 const REDIRECT_URI = process.env.REDIRECT_URI || 'https://rneeraja-salesforce76.vercel.app/auth/callback';
+
+// Set login domain: test.salesforce.com (Sandbox) vs login.salesforce.com (Production/Dev)
+const SF_DOMAIN = (process.env.SALESFORCE_ENV === 'sandbox')
+    ? 'https://test.salesforce.com'
+    : 'https://login.salesforce.com';
 
 app.use(cors({
     origin: [FRONTEND_URL, 'http://localhost:3000'],
@@ -87,7 +98,7 @@ const getSfClient = (req) => {
 // ==========================================
 
 app.get('/auth/login', (req, res) => {
-    const authUrl = 'https://login.salesforce.com/services/oauth2/authorize';
+    const authUrl = `${SF_DOMAIN}/services/oauth2/authorize`;
     const { verifier, challenge } = generatePKCE();
 
     // Encode the verifier directly inside state to bypass serverless cookie loss
@@ -98,7 +109,7 @@ app.get('/auth/login', (req, res) => {
 
     const params = {
         response_type: 'code',
-        client_id: process.env.CLIENT_ID,
+        client_id: CLIENT_ID,
         redirect_uri: REDIRECT_URI,
         state: statePayload,
         code_challenge: challenge,
@@ -126,12 +137,12 @@ const handleCallback = async (req, res) => {
         return res.status(400).send('Invalid state payload or corrupted PKCE verifier');
     }
 
-    const tokenUrl = 'https://login.salesforce.com/services/oauth2/token';
+    const tokenUrl = `${SF_DOMAIN}/services/oauth2/token`;
     const payload = {
         grant_type: 'authorization_code',
         code: code,
-        client_id: process.env.CLIENT_ID,
-        client_secret: process.env.CLIENT_SECRET,
+        client_id: CLIENT_ID,
+        client_secret: CLIENT_SECRET,
         redirect_uri: REDIRECT_URI,
         code_verifier: codeVerifier
     };

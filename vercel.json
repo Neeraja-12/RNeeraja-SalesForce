@@ -1,12 +1,12 @@
 {
   "version": 2,
   "builds": [
-    { "src": "index.js", "use": "@vercel/node" },
+    { "src": "server.js", "use": "@vercel/node" },
     { "src": "package.json", "use": "@vercel/static-build" }
   ],
   "routes": [
-    { "src": "/auth/(.*)", "dest": "/index.js" },
-    { "src": "/api/(.*)", "dest": "/index.js" },
+    { "src": "/auth/(.*)", "dest": "/server.js" },
+    { "src": "/api/(.*)", "dest": "/server.js" },
     { "src": "/manifest.json", "dest": "/manifest.json" },
     { "src": "/favicon.ico", "dest": "/favicon.ico" },
     { "src": "/static/(.*)", "dest": "/static/$1" },
