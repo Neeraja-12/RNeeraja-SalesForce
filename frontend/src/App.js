@@ -177,7 +177,7 @@ function App() {
           <div style={styles.appIcon}>⚡</div>
           <div>
             <h1 style={styles.headerTitle}>Salesforce Management Portal</h1>
-            <span style={styles.headerStatus}>Connected via OAuth 2.0</span>
+            <span style={styles.headerStatus}>● Connected via OAuth 2.0</span>
           </div>
         </div>
 
@@ -218,8 +218,11 @@ function App() {
       <main style={styles.mainContent}>
         <div style={styles.tableCard}>
           <div style={styles.tableHeaderBar}>
-            <h3 style={styles.tableTitle}>{selectedObject} Records</h3>
-            <span style={styles.recordBadge}>{records.length} items</span>
+            <div>
+              <h3 style={styles.tableTitle}>{selectedObject} Directory</h3>
+              <p style={styles.tableSubtitle}>Viewing all current records synchronized with Salesforce</p>
+            </div>
+            <span style={styles.recordBadge}>{records.length} items loaded</span>
           </div>
 
           <div style={styles.tableResponsive}>
@@ -229,7 +232,7 @@ function App() {
                   {columns.map(col => (
                     <th key={col} style={styles.th}>{col}</th>
                   ))}
-                  <th style={{ ...styles.th, textAlign: 'right' }}>Actions</th>
+                  <th style={{ ...styles.th, textAlign: 'right', minWidth: '140px' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -239,14 +242,27 @@ function App() {
                     <tr
                       key={rec.Id || idx}
                       ref={isLast ? lastRecordElementRef : null}
-                      style={styles.tr}
+                      style={{
+                        ...styles.tr,
+                        backgroundColor: idx % 2 === 0 ? '#ffffff' : '#f8fafc'
+                      }}
                     >
-                      {columns.map(col => (
-                        <td key={col} style={styles.td}>
-                          {String(rec[col] ?? '')}
-                        </td>
-                      ))}
-                      <td style={{ ...styles.td, textAlign: 'right' }}>
+                      {columns.map(col => {
+                        const cellVal = rec[col];
+                        const isIdCol = col === 'Id';
+                        return (
+                          <td key={col} style={styles.td}>
+                            {cellVal !== null && cellVal !== undefined && String(cellVal).trim() !== '' ? (
+                              <span style={isIdCol ? styles.idCell : styles.textCell}>
+                                {String(cellVal)}
+                              </span>
+                            ) : (
+                              <span style={styles.emptyCell}>—</span>
+                            )}
+                          </td>
+                        );
+                      })}
+                      <td style={{ ...styles.td, textAlign: 'right', whiteSpace: 'nowrap' }}>
                         <button
                           onClick={() => {
                             setEditingRecord(rec);
@@ -315,7 +331,7 @@ function App() {
                       onChange={e => setFormData({ ...formData, [field]: e.target.value })}
                       style={{
                         ...styles.input,
-                        backgroundColor: isReadOnly ? '#f3f4f6' : '#fff'
+                        backgroundColor: isReadOnly ? '#f1f5f9' : '#ffffff'
                       }}
                     />
                   </div>
@@ -338,13 +354,13 @@ function App() {
   );
 }
 
-// Visual Styling Definitions
+// Optimized Visual Styles for High Contrast & Readability
 const styles = {
   appWrapper: {
-    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
-    backgroundColor: '#f3f4f8',
+    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    backgroundColor: '#f1f5f9',
     minHeight: '100vh',
-    color: '#1e293b'
+    color: '#0f172a'
   },
   loginContainer: {
     display: 'flex',
@@ -357,7 +373,7 @@ const styles = {
     background: '#ffffff',
     padding: '48px',
     borderRadius: '16px',
-    boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
+    boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)',
     textAlign: 'center',
     maxWidth: '400px',
     width: '100%'
@@ -374,7 +390,7 @@ const styles = {
   },
   loginSubtitle: {
     margin: '0 0 32px 0',
-    color: '#64748b',
+    color: '#475569',
     fontSize: '14px'
   },
   loginBtn: {
@@ -386,8 +402,7 @@ const styles = {
     borderRadius: '8px',
     fontWeight: '600',
     fontSize: '16px',
-    cursor: 'pointer',
-    transition: 'background 0.2s ease'
+    cursor: 'pointer'
   },
   header: {
     display: 'flex',
@@ -395,7 +410,7 @@ const styles = {
     alignItems: 'center',
     backgroundColor: '#ffffff',
     padding: '16px 32px',
-    boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
+    borderBottom: '1px solid #cbd5e1',
     position: 'sticky',
     top: 0,
     zIndex: 10
@@ -416,8 +431,8 @@ const styles = {
   },
   headerStatus: {
     fontSize: '12px',
-    color: '#16a34a',
-    fontWeight: '500'
+    color: '#15803d',
+    fontWeight: '600'
   },
   headerRight: {
     display: 'flex',
@@ -432,15 +447,16 @@ const styles = {
     fontSize: '10px',
     fontWeight: '700',
     textTransform: 'uppercase',
-    color: '#64748b',
+    color: '#475569',
     marginBottom: '2px'
   },
   selectInput: {
     padding: '8px 12px',
     borderRadius: '6px',
-    border: '1px solid #cbd5e1',
+    border: '1px solid #94a3b8',
     backgroundColor: '#ffffff',
-    fontWeight: '500',
+    fontWeight: '600',
+    color: '#0f172a',
     cursor: 'pointer'
   },
   createBtn: {
@@ -454,7 +470,7 @@ const styles = {
   },
   logoutBtn: {
     padding: '9px 18px',
-    backgroundColor: '#ef4444',
+    backgroundColor: '#dc2626',
     color: '#ffffff',
     border: 'none',
     borderRadius: '6px',
@@ -468,7 +484,7 @@ const styles = {
     backgroundColor: '#ffffff',
     borderRadius: '12px',
     boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
-    border: '1px solid #e2e8f0',
+    border: '1px solid #cbd5e1',
     overflow: 'hidden'
   },
   tableHeaderBar: {
@@ -476,73 +492,108 @@ const styles = {
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: '20px 24px',
-    borderBottom: '1px solid #e2e8f0'
+    borderBottom: '1px solid #e2e8f0',
+    backgroundColor: '#ffffff'
   },
   tableTitle: {
     margin: 0,
-    fontSize: '16px',
-    fontWeight: '700'
+    fontSize: '18px',
+    fontWeight: '700',
+    color: '#0f172a'
+  },
+  tableSubtitle: {
+    margin: '4px 0 0 0',
+    fontSize: '12px',
+    color: '#64748b'
   },
   recordBadge: {
     backgroundColor: '#e0f2fe',
     color: '#0369a1',
-    padding: '4px 12px',
+    padding: '6px 14px',
     borderRadius: '9999px',
-    fontSize: '12px',
-    fontWeight: '600'
+    fontSize: '13px',
+    fontWeight: '700'
   },
   tableResponsive: {
-    overflowX: 'auto'
+    overflowX: 'auto',
+    width: '100%'
   },
   table: {
     width: '100%',
     borderCollapse: 'collapse',
-    fontSize: '14px'
+    fontSize: '14px',
+    textAlign: 'left'
   },
   th: {
-    backgroundColor: '#f8fafc',
-    padding: '12px 24px',
-    textAlign: 'left',
-    fontWeight: '600',
-    color: '#475569',
-    borderBottom: '1px solid #e2e8f0'
+    backgroundColor: '#f1f5f9',
+    padding: '14px 20px',
+    fontWeight: '700',
+    color: '#1e293b',
+    borderBottom: '2px solid #cbd5e1',
+    fontSize: '13px',
+    textTransform: 'uppercase',
+    letterSpacing: '0.05em'
   },
   tr: {
-    borderBottom: '1px solid #f1f5f9',
-    transition: 'background 0.15s ease'
+    borderBottom: '1px solid #e2e8f0'
   },
   td: {
-    padding: '16px 24px',
-    color: '#334155'
+    padding: '14px 20px',
+    color: '#0f172a',
+    fontSize: '14px',
+    verticalAlign: 'middle',
+    maxWidth: '280px',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap'
+  },
+  textCell: {
+    fontWeight: '500',
+    color: '#0f172a'
+  },
+  idCell: {
+    fontFamily: 'monospace',
+    fontSize: '12px',
+    backgroundColor: '#f1f5f9',
+    color: '#475569',
+    padding: '2px 6px',
+    borderRadius: '4px',
+    border: '1px solid #e2e8f0'
+  },
+  emptyCell: {
+    color: '#94a3b8',
+    fontWeight: '400'
   },
   editBtn: {
-    padding: '6px 12px',
-    backgroundColor: '#f1f5f9',
+    padding: '6px 14px',
+    backgroundColor: '#e0f2fe',
     color: '#0284c7',
-    border: 'none',
-    borderRadius: '4px',
+    border: '1px solid #bae6fd',
+    borderRadius: '6px',
     fontWeight: '600',
     marginRight: '8px',
     cursor: 'pointer'
   },
   deleteBtn: {
-    padding: '6px 12px',
+    padding: '6px 14px',
     backgroundColor: '#fef2f2',
     color: '#dc2626',
-    border: 'none',
-    borderRadius: '4px',
+    border: '1px solid #fecaca',
+    borderRadius: '6px',
     fontWeight: '600',
     cursor: 'pointer'
   },
   loadingState: {
     padding: '32px',
     textAlign: 'center',
-    color: '#64748b'
+    color: '#475569',
+    fontWeight: '500'
   },
   emptyState: {
-    padding: '32px',
+    padding: '48px',
     textAlign: 'center',
-    color: '#64748b'
+    color: '#64748b',
+    fontSize: '15px'
   },
   modalBackdrop: {
     position: 'fixed',
@@ -550,7 +601,7 @@ const styles = {
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(15, 23, 42, 0.5)',
+    backgroundColor: 'rgba(15, 23, 42, 0.6)',
     display: 'flex',
     justifyContent: 'center',
     alignItems: 'center',
@@ -560,7 +611,7 @@ const styles = {
     backgroundColor: '#ffffff',
     borderRadius: '12px',
     width: '100%',
-    maxWidth: '480px',
+    maxWidth: '500px',
     boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
     overflow: 'hidden'
   },
@@ -569,12 +620,14 @@ const styles = {
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: '20px 24px',
-    borderBottom: '1px solid #e2e8f0'
+    borderBottom: '1px solid #cbd5e1',
+    backgroundColor: '#f8fafc'
   },
   modalTitle: {
     margin: 0,
     fontSize: '18px',
-    fontWeight: '700'
+    fontWeight: '700',
+    color: '#0f172a'
   },
   closeBtn: {
     background: 'none',
@@ -591,22 +644,23 @@ const styles = {
   },
   label: {
     display: 'block',
-    fontSize: '12px',
+    fontSize: '13px',
     fontWeight: '600',
-    color: '#475569',
+    color: '#334155',
     marginBottom: '6px'
   },
   readOnlyTag: {
-    color: '#94a3b8',
+    color: '#64748b',
     fontWeight: '400'
   },
   input: {
     width: '100%',
     padding: '10px 14px',
     borderRadius: '6px',
-    border: '1px solid #cbd5e1',
+    border: '1px solid #94a3b8',
     boxSizing: 'border-box',
-    fontSize: '14px'
+    fontSize: '14px',
+    color: '#0f172a'
   },
   modalFooter: {
     display: 'flex',
@@ -617,8 +671,8 @@ const styles = {
   cancelBtn: {
     padding: '10px 18px',
     backgroundColor: '#f1f5f9',
-    color: '#475569',
-    border: 'none',
+    color: '#334155',
+    border: '1px solid #cbd5e1',
     borderRadius: '6px',
     fontWeight: '600',
     cursor: 'pointer'
